@@ -2,7 +2,10 @@
 """Render the make.fun news-image-20261124 entry: one dense broadsheet of
 24 November 2026 world news (7 main panels + 21 ALSO ON one-liners = 28 stories).
 Deterministic: fixed palette, fixed fonts, no randomness, no timestamps.
-v1: full layout. Run: python3 draw_image.py [out_path]  (default: entry.png next to this file)
+v3: dull newspaper-paper theme (Aris feedback); MAGYAR replaces HANOI in the
+grid (Hanoi moves to ALSO ON item 1); a description paragraph under every
+main panel (hero + 6 grid), text verbatim from the REVISION spec.
+Run: python3 draw_image.py [out_path]  (default: entry.png next to this file)
 """
 import os
 import sys
@@ -13,20 +16,23 @@ FONT_DIR = "/usr/share/fonts/truetype/dejavu"
 BOLD = os.path.join(FONT_DIR, "DejaVuSans-Bold.ttf")
 REG = os.path.join(FONT_DIR, "DejaVuSans.ttf")
 
-# Palette
-BG = (20, 39, 62)          # deep steel-blue base
-PANEL = (28, 53, 82)       # panel background
-PANEL_DARK = (16, 32, 52)  # darker panel / overlay
-BORDER = (49, 82, 122)
-AMBER = (242, 168, 29)
-AMBER_DK = (199, 127, 10)
-WHITE = (244, 247, 250)
-MUTED = (159, 180, 200)
-GREEN = (70, 185, 120)
-RED = (229, 72, 77)
+# Palette — dull newspaper paper
+PAPER = (237, 230, 214)      # #EDE6D6 base
+BANNER_BG = (232, 223, 202)
+PANEL = (246, 241, 229)      # #F6F1E5 panel background
+PANEL_DARK = (228, 219, 198)  # #E4DBC6 darker panel / map bg
+BORDER = (178, 166, 138)
+AMBER = (138, 109, 27)       # #8A6D1B dark amber (headers, numbers)
+AMBER_DK = (138, 109, 27)
+WHITE = (246, 241, 229)      # paper-white (text on dark chips/bands)
+MUTED = (96, 88, 74)
+BODY = (56, 51, 44)          # body text on paper
+BLUE = (46, 74, 98)          # #2E4A62 region blue
+GREEN = (34, 110, 66)
+RED = (163, 59, 46)          # #A33B2E claim red
 SKY = (38, 74, 110)
-SEA = (14, 30, 50)
-INK = (20, 39, 62)
+SEA = (38, 62, 88)
+INK = (27, 26, 23)           # #1B1A17 ink text
 
 _font_cache = {}
 
@@ -38,7 +44,7 @@ def font(path, size):
     return _font_cache[key]
 
 
-def fit_font(text, path, max_size, max_w, min_size=10):
+def fit_font(text, path, max_size, max_w, min_size=8):
     """Largest font size <= max_size whose rendered width fits max_w."""
     size = max_size
     while size > min_size:
@@ -92,7 +98,7 @@ def dashed_line(draw, x1, y1, x2, y2, fill, dash=9, gap=6, width=2):
         d = e + gap
 
 
-def chip(draw, x, y, text, bg=AMBER, fg=INK, size=11):
+def chip(draw, x, y, text, bg=BLUE, fg=WHITE, size=11):
     f = font(BOLD, size)
     tw = f.getlength(text)
     pad = 6
@@ -103,32 +109,54 @@ def chip(draw, x, y, text, bg=AMBER, fg=INK, size=11):
 
 
 def kicker(draw, x, y, text, size=11):
-    draw.text((x, y), text, font=font(BOLD, size), fill=AMBER)
+    draw.text((x, y), text, font=font(BOLD, size), fill=BLUE)
 
 
 # ---------------------------------------------------------------- data
 HERO = ("JETS SCRAMBLE", "Russian planes enter Korea air zone",
-        "ULLEUNG, S. KOREA · EAST ASIA · SECURITY", "OFFICIAL")
+        "ULLEUNG, S. KOREA · EAST ASIA · SECURITY", "OFFICIAL",
+        "Two Russian Tu-160 bombers with fighter escorts entered Korea's air "
+        "defence zone; F-15Ks scrambled, a 3-minute alert sounded on Ulleung "
+        "Island. Seoul says no airspace breach; the Russian attaché was summoned.")
 
 PANELS = [
-    # (kicker, label, sub, chip, kind)
+    # (kicker, label, sub, chip, kind, description)
     ("EAST ASIA · MARKETS", "ASIAN MARKETS SOAR",
-     "Huang return lifts Nikkei, Kospi, Taiwan", "CONFIRMED", "markets"),
-    ("SE ASIA · ACCIDENT", "HANOI BLAST",
-     "6 killed, 10 hurt in shop explosion", "REPORTED", "hanoi"),
+     "Huang return lifts Nikkei, Kospi, Taiwan", "CONFIRMED", "markets",
+     "Taiwan's Taiex closes up 9% after last week's AI rout; Seoul's Kospi "
+     "gains 7.5% to retake 5,000; Tokyo's Nikkei adds 4.5% as Jensen Huang's "
+     "return lifts chip stocks."),
+    ("UZHHOROD, UKRAINE · EUROPE · DIPLOMACY", "MAGYAR MEETS ZELENSKYY",
+     "Gas, borders, trains agreed in Uzhhorod", "REPORTED", "magyar",
+     "Hungarian opposition leader Péter Magyar meets Zelenskyy in Uzhhorod in "
+     "their first formal talks; they agree on gas and fuel supplies, border "
+     "crossings, direct trains and demining."),
     ("EUROPE · WAR", "ZAPORIZHZHIA HIT",
-     "Overnight attack kills 2, wounds 40", "OFFICIAL", "zaporizhzhia"),
+     "Overnight attack kills 2, wounds 40", "OFFICIAL", "zaporizhzhia",
+     "Overnight Russian attack kills 2 and wounds 40, including 4 children; "
+     "a private house was destroyed and a five-storey block partly destroyed, "
+     "Ukraine's governor says."),
     ("GLOBAL · BUSINESS", "SANOFI'S $41BN DEAL",
-     "Buys Insmed — biggest biotech deal in years", "CONFIRMED", "sanofi"),
+     "Buys Insmed — biggest biotech deal in years", "CONFIRMED", "sanofi",
+     "Sanofi agrees to buy Insmed for $175 a share in cash — $41bn in total, "
+     "the year's biggest biopharma deal. Both boards approved; the deal is "
+     "expected to close in the first half of 2027."),
     ("MIDDLE EAST · WAR", "POLICE POST HIT",
-     "Israeli strikes kill 6 in Gaza", "REPORTED", "gaza"),
+     "Israeli strikes kill 6 in Gaza", "REPORTED", "gaza",
+     "Israeli airstrikes kill at least 6 Palestinians on Tuesday — 3 at a "
+     "police post in Khan Younis, two of them officers, and 3 near the "
+     "Netzarim corridor, Reuters reports."),
     ("GLOBAL · CRYPTO", "BITCOIN SINKS BELOW $60K",
-     "Nvidia rally fades — $844M liquidated", "REPORTED", "bitcoin"),
+     "Nvidia rally fades — $844M liquidated", "REPORTED", "bitcoin",
+     "Bitcoin breaks below $60,000, giving back Monday's Nvidia rally; $844M "
+     "in crypto futures were liquidated in 24 hours as US spot ETFs log a "
+     "fifth straight day of outflows."),
 ]
 
 # (text, region, flag) — flag "" | "PROPOSAL" | "CLAIM" | "UTC"
+# Item 1 is Hanoi (moved from the grid in the v3 swap); items 2-21 unchanged.
 ALSO_ON = [
-    ("Magyar, Zelenskyy meet, agree gas, borders, trains", "EUROPE", ""),
+    ("Hanoi blast kills 6, 10 hurt in shop explosion", "SE ASIA", ""),
     ("UAE bus crash kills 13, toll rises in hospital", "MIDDLE EAST", ""),
     ("Magnitude 5.6 quake jolts eastern Nepal, no casualties", "SOUTH ASIA", ""),
     ("Hasina seeks return on 16 December, Dhaka says extradition only", "SOUTH ASIA", "PROPOSAL"),
@@ -187,9 +215,11 @@ CONTINENTS = [
      (142, -11), (137, -12), (135, -15), (130, -13), (126, -14), (122, -17),
      (118, -20)],
 ]
-# (lon, lat) map markers
+# (lon, lat) map markers: Ulleung, Tokyo, Seoul, Taipei, Hanoi,
+# Zaporizhzhia, Uzhhorod, Paris, Khan Younis
 MARKERS = [(129.5, 37.5), (139.7, 35.7), (127.0, 37.5), (121.6, 25.0),
-           (105.8, 21.0), (35.2, 47.8), (2.3, 48.9), (34.3, 31.3)]
+           (105.8, 21.0), (35.2, 47.8), (22.3, 48.6), (2.3, 48.9),
+           (34.3, 31.3)]
 
 
 def draw_skyline(draw, x0, y0, w, base_y, color, seed_heights):
@@ -216,93 +246,90 @@ def draw_jet(draw, cx, cy, s, fill, angle_deg=0):
 
 
 def panel_illustration(draw, kind, x0, y0, w, h):
-    """Flat illustration band inside a grid panel (x0,y0,w,h)."""
+    """Flat illustration band inside a grid panel (x0,y0,w,h); h is ~40."""
     if kind == "markets":
-        vgrad(draw, (x0, y0, x0 + w, y0 + h), (16, 46, 34), (24, 68, 48))
-        draw_skyline(draw, x0 + 8, y0, w - 16, y0 + h - 8,
-                     (38, 84, 62), [26, 40, 32, 48, 36, 52, 30])
-        draw.line([(x0 + 14, y0 + h - 16), (x0 + w * 0.38, y0 + h - 44),
-                   (x0 + w * 0.62, y0 + h - 30), (x0 + w - 14, y0 + 12)],
-                  fill=GREEN, width=5, joint="curve")
-        draw.polygon([(x0 + w - 34, y0 + 8), (x0 + w - 14, y0 + 8),
-                      (x0 + w - 14, y0 + 26)], fill=GREEN)
-    elif kind == "hanoi":
-        vgrad(draw, (x0, y0, x0 + w, y0 + h), (52, 38, 30), (30, 26, 40))
-        draw_skyline(draw, x0 + 8, y0, w - 16, y0 + h - 8,
-                     (24, 22, 34), [34, 22, 44, 28, 38])
-        # broken shopfront: tilted roof slab
-        draw.polygon([(x0 + 96, y0 + h - 40), (x0 + 150, y0 + h - 52),
-                      (x0 + 158, y0 + h - 38), (x0 + 104, y0 + h - 28)],
-                     fill=(70, 52, 40))
-        # smoke
-        for cx, cy, r in [(x0 + 130, y0 + 22, 12), (x0 + 148, y0 + 12, 15),
-                          (x0 + 168, y0 + 26, 10)]:
-            draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(120, 118, 112))
-        # fire glow
-        draw.ellipse([x0 + 108, y0 + h - 30, x0 + 156, y0 + h - 6],
-                     fill=(232, 120, 40))
+        vgrad(draw, (x0, y0, x0 + w, y0 + h), (205, 222, 205), (175, 200, 180))
+        draw_skyline(draw, x0 + 8, y0, w - 16, y0 + h - 4,
+                     (110, 145, 115), [14, 20, 16, 24, 18, 26, 15])
+        draw.line([(x0 + 14, y0 + h - 8), (x0 + w * 0.38, y0 + h - 22),
+                   (x0 + w * 0.62, y0 + h - 14), (x0 + w - 14, y0 + 6)],
+                  fill=GREEN, width=4, joint="curve")
+        draw.polygon([(x0 + w - 30, y0 + 4), (x0 + w - 12, y0 + 4),
+                      (x0 + w - 12, y0 + 20)], fill=GREEN)
+    elif kind == "magyar":
+        vgrad(draw, (x0, y0, x0 + w, y0 + h), (200, 212, 225), (170, 190, 210))
+        # two flags on poles: Hungary (red/white/green) and Ukraine (blue/yellow)
+        for fx, stripes in ((x0 + 62, [(198, 60, 48), (246, 241, 229), (60, 120, 70)]),
+                            (x0 + w - 126, [(58, 108, 178), (238, 198, 60)])):
+            draw.line([fx, y0 + 4, fx, y0 + h - 2], fill=(70, 66, 60), width=2)
+            fw, fh = 62, 26
+            sy = y0 + 5
+            for j, col in enumerate(stripes):
+                sh = fh // len(stripes)
+                draw.rectangle([fx + 2, sy + j * sh,
+                                fx + 2 + fw, sy + (j + 1) * sh], fill=col)
+        draw.line([x0 + 10, y0 + h - 2, x0 + w - 10, y0 + h - 2],
+                  fill=(120, 112, 98), width=1)
     elif kind == "zaporizhzhia":
-        vgrad(draw, (x0, y0, x0 + w, y0 + h), (10, 18, 34), (22, 34, 58))
-        draw_skyline(draw, x0 + 8, y0, w - 16, y0 + h - 8,
-                     (8, 12, 24), [30, 44, 26, 50, 34, 42, 28])
+        vgrad(draw, (x0, y0, x0 + w, y0 + h), (60, 72, 92), (40, 52, 72))
+        draw_skyline(draw, x0 + 8, y0, w - 16, y0 + h - 4,
+                     (28, 38, 52), [16, 22, 14, 24, 18, 20, 15])
         # lit windows
-        for wx, wy in [(x0 + 40, y0 + h - 34), (x0 + 120, y0 + h - 44),
-                       (x0 + 210, y0 + h - 30), (x0 + 260, y0 + h - 40)]:
-            draw.rectangle([wx, wy, wx + 5, wy + 7], fill=AMBER)
+        for wx, wy in [(x0 + 40, y0 + h - 18), (x0 + 120, y0 + h - 22),
+                       (x0 + 210, y0 + h - 16), (x0 + 260, y0 + h - 20)]:
+            draw.rectangle([wx, wy, wx + 4, wy + 5], fill=(200, 150, 40))
         # fire on one building
-        draw.polygon([(x0 + 176, y0 + h - 8), (x0 + 196, y0 + h - 46),
-                      (x0 + 216, y0 + h - 8)], fill=(232, 90, 30))
-        draw.ellipse([x0 + 182, y0 + h - 52, x0 + 210, y0 + h - 24],
+        draw.polygon([(x0 + 176, y0 + h - 4), (x0 + 196, y0 + h - 24),
+                      (x0 + 216, y0 + h - 4)], fill=(220, 100, 40))
+        draw.ellipse([x0 + 182, y0 + h - 28, x0 + 210, y0 + h - 10],
                      fill=(242, 168, 29))
-        for cx, cy, r in [(x0 + 196, y0 + 14, 11), (x0 + 214, y0 + 8, 13)]:
-            draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(90, 88, 84))
+        for cx, cy, r in [(x0 + 196, y0 + 8, 8), (x0 + 212, y0 + 5, 9)]:
+            draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(130, 128, 122))
     elif kind == "sanofi":
-        vgrad(draw, (x0, y0, x0 + w, y0 + h), (24, 44, 66), (16, 30, 50))
-        f = fit_font("$41BN", BOLD, 46, w - 110)
-        draw.text((x0 + 14, y0 + 12), "$41BN", font=f, fill=AMBER)
+        vgrad(draw, (x0, y0, x0 + w, y0 + h), (210, 222, 232), (185, 205, 220))
+        f = fit_font("$41BN", BOLD, 30, w - 110)
+        draw.text((x0 + 12, y0 + 4), "$41BN", font=f, fill=AMBER)
         # pill capsule
-        px, py = x0 + w - 96, y0 + 16
-        draw.rounded_rectangle([px, py, px + 78, py + 30], radius=15,
-                               fill=(220, 230, 240))
-        draw.rounded_rectangle([px + 39, py, px + 78, py + 30], radius=15,
+        px, py = x0 + w - 88, y0 + 8
+        draw.rounded_rectangle([px, py, px + 70, py + 24], radius=12,
+                               fill=(246, 241, 229))
+        draw.rounded_rectangle([px + 35, py, px + 70, py + 24], radius=12,
                                fill=AMBER)
-        draw.line([(px + 39, py), (px + 39, py + 30)], fill=(120, 90, 20),
+        draw.line([(px + 35, py), (px + 35, py + 24)], fill=(120, 90, 20),
                   width=2)
-        # (no chart line: the band is only 66px tall and any line here
-        # strikes through the $41BN text — the figure + pill carry it)
     elif kind == "gaza":
-        vgrad(draw, (x0, y0, x0 + w, y0 + h), (46, 36, 30), (26, 24, 36))
-        draw_skyline(draw, x0 + 8, y0, w - 16, y0 + h - 8,
-                     (20, 18, 30), [26, 36, 24, 40, 30])
+        vgrad(draw, (x0, y0, x0 + w, y0 + h), (222, 208, 188), (205, 188, 165))
+        draw_skyline(draw, x0 + 8, y0, w - 16, y0 + h - 4,
+                     (140, 125, 105), [14, 18, 12, 20, 15])
         # checkpoint barrier: amber/black stripes
-        bx, by = x0 + 90, y0 + h - 34
+        bx, by = x0 + 90, y0 + h - 14
         for i in range(6):
             col = AMBER if i % 2 == 0 else (30, 30, 30)
-            draw.rectangle([bx + i * 18, by, bx + i * 18 + 18, by + 12],
+            draw.rectangle([bx + i * 16, by, bx + i * 16 + 16, by + 9],
                            fill=col)
-        draw.rectangle([bx - 4, by + 12, bx + 4, y0 + h - 6], fill=MUTED)
-        draw.rectangle([bx + 104, by + 12, bx + 112, y0 + h - 6], fill=MUTED)
-        for cx, cy, r in [(x0 + 230, y0 + 18, 12), (x0 + 250, y0 + 10, 14)]:
-            draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(110, 108, 102))
+        draw.rectangle([bx - 4, by + 9, bx + 4, y0 + h - 2], fill=MUTED)
+        draw.rectangle([bx + 92, by + 9, bx + 100, y0 + h - 2], fill=MUTED)
+        for cx, cy, r in [(x0 + 230, y0 + 10, 9), (x0 + 248, y0 + 6, 10)]:
+            draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(150, 146, 138))
     elif kind == "bitcoin":
-        vgrad(draw, (x0, y0, x0 + w, y0 + h), (52, 22, 26), (26, 16, 34))
+        vgrad(draw, (x0, y0, x0 + w, y0 + h), (228, 208, 205), (212, 188, 185))
         # $60K dashed line
-        ly = y0 + 26
+        ly = y0 + 16
         dashed_line(draw, x0 + 10, ly, x0 + w - 10, ly, AMBER, dash=8, gap=6,
                     width=2)
-        draw.text((x0 + 12, ly - 20), "$60K", font=font(BOLD, 13), fill=AMBER)
+        draw.text((x0 + 12, ly - 13), "$60K", font=font(BOLD, 11), fill=AMBER)
         # falling chart breaking below the line
-        draw.line([(x0 + 16, y0 + 12), (x0 + w * 0.42, y0 + 24),
-                   (x0 + w * 0.62, y0 + 40), (x0 + w - 16, y0 + h - 12)],
-                  fill=RED, width=5, joint="curve")
-        # bitcoin coin: hand-drawn ₿ (DejaVu lacks U+20BF, renders tofu)
-        cx, cy, r = x0 + w - 46, y0 + h - 26, 20
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=AMBER)
-        bf = font(BOLD, 24)
+        draw.line([(x0 + 16, y0 + 6), (x0 + w * 0.42, y0 + 14),
+                   (x0 + w * 0.62, y0 + 24), (x0 + w - 16, y0 + h - 6)],
+                  fill=RED, width=4, joint="curve")
+        # bitcoin coin: hand-drawn B (DejaVu lacks U+20BF, renders tofu)
+        cx, cy, r = x0 + w - 40, y0 + h - 14, 13
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(200, 150, 40))
+        bf = font(BOLD, 15)
         bw = bf.getlength("B")
-        draw.text((cx - bw / 2, cy - 14), "B", font=bf, fill=INK)
-        draw.line([cx - 7, cy - 13, cx - 7, cy + 13], fill=INK, width=2)
-        draw.line([cx + 7, cy - 13, cx + 7, cy + 13], fill=INK, width=2)
+        draw.text((cx - bw / 2, cy - 9), "B", font=bf, fill=INK)
+        draw.line([cx - 5, cy - 8, cx - 5, cy + 8], fill=INK, width=2)
+        draw.line([cx + 5, cy - 8, cx + 5, cy + 8], fill=INK, width=2)
 
 
 def draw_map(draw, x0, y0, w, h):
@@ -317,7 +344,7 @@ def draw_map(draw, x0, y0, w, h):
 
     for poly in CONTINENTS:
         pts = [proj(lon, lat) for lon, lat in poly]
-        draw.polygon(pts, fill=(42, 74, 107), outline=(74, 107, 140))
+        draw.polygon(pts, fill=(172, 164, 138), outline=(140, 130, 105))
     for lon, lat in MARKERS:
         mx, my = proj(lon, lat)
         draw.ellipse([mx - 5, my - 5, mx + 5, my + 5], fill=RED,
@@ -325,19 +352,17 @@ def draw_map(draw, x0, y0, w, h):
 
 
 def draw_also_on_item(draw, num, text, region, flag, x, y, w):
-    """One numbered one-liner, wrapped to at most 2 lines, region in amber."""
+    """One numbered one-liner, wrapped to at most 2 lines, region in blue."""
     num_f = font(BOLD, 13)
-    txt_f = font(REG, 13)
+    txt_f = font(REG, 12)
     reg_f = font(BOLD, 11)
-    suffix = " — " + region
+    flag_col = RED if flag == "CLAIM" else BLUE
+    tokens = [(wd, txt_f, INK) for wd in text.split()]
+    tokens.append(("—", reg_f, BLUE))
+    tokens += [(wd, reg_f, BLUE) for wd in region.split()]
     if flag:
-        suffix += " · " + flag
-    # Wrap "text + suffix" as words, tracking which words belong to suffix.
-    words = text.split()
-    suf_words = suffix.split()
-    # Build token list: (word, font, fill)
-    tokens = [(wd, txt_f, WHITE) for wd in words]
-    tokens += [(wd, reg_f, AMBER) for wd in suf_words]
+        tokens.append(("·", reg_f, flag_col))
+        tokens += [(wd, reg_f, flag_col) for wd in flag.split()]
     lines, cur, cur_w = [], [], 0.0
     num_w = num_f.getlength(f"{num}. ")
     avail = w - num_w
@@ -361,97 +386,101 @@ def draw_also_on_item(draw, num, text, region, flag, x, y, w):
         for wd, fnt, fill in ln:
             draw.text((xx, yy), wd + " ", font=fnt, fill=fill)
             xx += fnt.getlength(wd + " ")
-        yy += 17
+        yy += 16
     return yy
 
 
 def render():
-    img = Image.new("RGB", (W, H), BG)
+    img = Image.new("RGB", (W, H), PAPER)
     d = ImageDraw.Draw(img)
 
     # ---- Banner ------------------------------------------------------
-    d.rectangle([0, 0, W, 60], fill=(14, 30, 51))
+    d.rectangle([0, 0, W, 58], fill=BANNER_BG)
     # globe icon
-    cx, cy, r = 40, 30, 17
+    cx, cy, r = 40, 29, 17
     d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=AMBER, width=2)
     d.ellipse([cx - 7, cy - r, cx + 7, cy + r], outline=AMBER, width=1)
     d.line([cx - r, cy, cx + r, cy], fill=AMBER, width=1)
     title_f = fit_font("24 NOVEMBER 2026", BOLD, 44, 560)
-    d.text((66, 8), "24 NOVEMBER 2026", font=title_f, fill=WHITE)
+    d.text((66, 7), "24 NOVEMBER 2026", font=title_f, fill=INK)
     d.text((W - 12 - font(REG, 14).getlength("ONE DAY OF WORLD NEWS · 28 STORIES"),
-            22), "ONE DAY OF WORLD NEWS · 28 STORIES",
+            21), "ONE DAY OF WORLD NEWS · 28 STORIES",
            font=font(REG, 14), fill=MUTED)
-    d.rectangle([0, 60, W, 63], fill=AMBER)
+    d.rectangle([0, 58, W, 61], fill=AMBER)
 
     # ---- Big-numbers strip -------------------------------------------
-    bn_f = fit_font(BIG_NUMBERS, BOLD, 20, W - 24)
-    d.text(((W - bn_f.getlength(BIG_NUMBERS)) / 2, 68), BIG_NUMBERS,
+    bn_f = fit_font(BIG_NUMBERS, BOLD, 19, W - 24)
+    d.text(((W - bn_f.getlength(BIG_NUMBERS)) / 2, 65), BIG_NUMBERS,
            font=bn_f, fill=AMBER)
 
     # ---- Hero: KADIZ --------------------------------------------------
-    hx0, hy0, hx1, hy1 = 12, 90, W - 12, 250
-    vgrad(d, (hx0, hy0, hx1, hy1), (30, 62, 100), (16, 34, 58))
+    hx0, hy0, hx1, hy1 = 12, 88, W - 12, 246
+    vgrad(d, (hx0, hy0, hx1, 148), (140, 168, 198), (95, 125, 158))
     # sun glow top-right
-    d.ellipse([hx1 - 120, hy0 + 8, hx1 - 56, hy0 + 72], fill=(242, 190, 80))
+    d.ellipse([hx1 - 120, hy0 + 6, hx1 - 56, hy0 + 58], fill=(240, 205, 110))
     # sea
-    d.rectangle([hx0, hy1 - 52, hx1, hy1], fill=SEA)
-    for wy in (hy1 - 44, hy1 - 32, hy1 - 20):
-        dashed_line(d, hx0 + 16, wy, hx1 - 16, wy, (70, 110, 150),
-                    dash=14, gap=10, width=1)
+    d.rectangle([hx0, 132, hx1, 148], fill=SEA)
+    dashed_line(d, hx0 + 16, 140, hx1 - 16, 140, (110, 140, 170),
+                dash=14, gap=10, width=1)
     # dashed ADIZ boundary across the sky
-    dashed_line(d, hx0 + 30, hy0 + 96, hx1 - 120, hy0 + 44, AMBER,
+    dashed_line(d, hx0 + 30, 112, hx1 - 120, 96, AMBER,
                 dash=10, gap=8, width=2)
-    d.text((hx0 + 34, hy0 + 100), "KADIZ", font=font(BOLD, 11), fill=AMBER)
+    d.text((hx0 + 34, 116), "KADIZ", font=font(BOLD, 11), fill=AMBER)
     # island with alert
-    ix, iy = hx0 + 150, hy1 - 52
-    d.ellipse([ix - 46, iy - 6, ix + 46, iy + 6], fill=(52, 84, 52))
-    d.polygon([(ix - 8, iy - 34), (ix + 8, iy - 34), (ix, iy - 12)],
-              fill=AMBER)
-    d.text((ix - 2, iy - 30), "!", font=font(BOLD, 12), fill=INK)
+    ix = hx0 + 150
+    d.ellipse([ix - 46, 136, ix + 46, 148], fill=(90, 125, 85))
+    d.polygon([(ix - 8, 118), (ix + 8, 118), (ix, 134)], fill=AMBER)
+    d.text((ix - 2, 120), "!", font=font(BOLD, 11), fill=INK)
     # jets
-    draw_jet(d, hx0 + 560, hy0 + 62, 1.5, (220, 228, 236), -28)
-    draw_jet(d, hx0 + 640, hy0 + 92, 1.1, (180, 190, 200), -28)
-    draw_jet(d, hx0 + 480, hy0 + 40, 0.9, (160, 170, 182), -28)
+    draw_jet(d, hx0 + 560, 106, 1.2, (238, 238, 232), -28)
+    draw_jet(d, hx0 + 640, 120, 0.9, (215, 220, 225), -28)
+    draw_jet(d, hx0 + 480, 98, 0.7, (200, 208, 214), -28)
     # label band
-    d.rectangle([hx0, hy1 - 62, hx1, hy1], fill=PANEL_DARK)
-    d.rectangle([hx0, hy1 - 62, hx1, hy1 - 60], fill=AMBER)
-    kicker(d, hx0 + 14, hy1 - 56, HERO[2], size=11)
-    chip(d, hx1 - 92, hy1 - 58, HERO[3])
-    d.text((hx0 + 14, hy1 - 46), HERO[0], font=font(BOLD, 28), fill=WHITE)
-    d.text((hx0 + 14, hy1 - 16), HERO[1], font=font(REG, 15),
-           fill=MUTED)
+    d.rectangle([hx0, 148, hx1, hy1], fill=PANEL)
+    d.rectangle([hx0, 148, hx1, 150], fill=AMBER)
+    kicker(d, hx0 + 14, 154, HERO[2], size=11)
+    chip(d, hx1 - 92, 152, HERO[3])
+    d.text((hx0 + 14, 168), HERO[0], font=font(BOLD, 26), fill=INK)
+    d.text((hx0 + 14, 198), HERO[1], font=font(REG, 13), fill=BODY)
+    hero_desc = wrap_text(HERO[4], font(REG, 12), hx1 - hx0 - 28)
+    yy = 214
+    for ln in hero_desc[:2]:
+        d.text((hx0 + 14, yy), ln, font=font(REG, 12), fill=BODY)
+        yy += 15
 
     # ---- Grid 2x3 ------------------------------------------------------
     gx = [12, 352, 692]
-    gy = [256, 402]
-    pw, ph = 320, 138
-    for i, (kick, label, sub, chp, kind) in enumerate(PANELS):
+    gy = [252, 420]
+    pw, ph = 320, 164
+    for i, (kick, label, sub, chp, kind, desc) in enumerate(PANELS):
         x0 = gx[i % 3]
         y0 = gy[i // 3]
         d.rectangle([x0, y0, x0 + pw, y0 + ph], fill=PANEL, outline=BORDER)
-        panel_illustration(d, kind, x0 + 1, y0 + 1, pw - 2, 66)
-        kicker(d, x0 + 10, y0 + 72, kick, size=10)
-        chip(d, x0 + pw - 78, y0 + 70, chp, size=9)
+        panel_illustration(d, kind, x0 + 1, y0 + 1, pw - 2, 40)
+        kf = fit_font(kick, BOLD, 10, pw - 100)
+        d.text((x0 + 10, y0 + 46), kick, font=kf, fill=BLUE)
+        chip(d, x0 + pw - 78, y0 + 44, chp, size=9)
         lab_f = fit_font(label, BOLD, 20, pw - 20)
-        d.text((x0 + 10, y0 + 86), label, font=lab_f, fill=WHITE)
-        sub_lines = wrap_text(sub, font(REG, 12), pw - 20)
-        yy = y0 + 110
-        for ln in sub_lines[:2]:
-            d.text((x0 + 10, yy), ln, font=font(REG, 12), fill=MUTED)
-            yy += 14
+        d.text((x0 + 10, y0 + 60), label, font=lab_f, fill=INK)
+        d.text((x0 + 10, y0 + 84), sub, font=font(REG, 12), fill=BODY)
+        desc_lines = wrap_text(desc, font(REG, 11), pw - 20)
+        yy = y0 + 100
+        for ln in desc_lines[:4]:
+            d.text((x0 + 10, yy), ln, font=font(REG, 11), fill=BODY)
+            yy += 13
 
     # ---- ALSO ON strip -------------------------------------------------
-    ay = 548
+    ay = 590
     d.text((12, ay), "ALSO ON TUESDAY 24 NOVEMBER",
            font=font(BOLD, 20), fill=AMBER)
     right = "21 MORE STORIES · 8 REGIONS · 16 FIELDS"
     d.text((W - 12 - font(REG, 13).getlength(right), ay + 4), right,
            font=font(REG, 13), fill=MUTED)
-    d.rectangle([12, ay + 28, W - 12, ay + 30], fill=BORDER)
+    d.rectangle([12, ay + 26, W - 12, ay + 28], fill=BORDER)
     col_x = [12, 352, 692]
     col_w = 320
     row_y = ay + 32
-    row_h = 39
+    row_h = 36
     for i, (text, region, flag) in enumerate(ALSO_ON):
         col = i % 3
         row = i // 3
@@ -459,39 +488,36 @@ def render():
                           col_x[col], row_y + row * row_h, col_w)
 
     # ---- Bottom band: map + DATE CHECK + legend ------------------------
-    by = 860
+    by = 878
     d.text((12, by), "WHERE IT HAPPENED",
            font=font(BOLD, 14), fill=AMBER)
-    draw_map(d, 12, by + 22, 428, 138)
+    draw_map(d, 12, by + 20, 428, 126)
     rx = 456
     # DATE CHECK box
-    d.rectangle([rx, by + 22, W - 12, by + 92], fill=PANEL, outline=AMBER)
-    d.text((rx + 12, by + 28), "DATE CHECK",
+    d.rectangle([rx, by + 20, W - 12, by + 84], fill=PANEL, outline=AMBER)
+    d.text((rx + 12, by + 26), "DATE CHECK",
            font=font(BOLD, 15), fill=AMBER)
     dc_lines = wrap_text(
         "All 28 stories verified as 24 Nov 2026 events. Items 19 & 21 are "
         "UTC-dated (Monday night in the Americas = Tuesday UTC); item 20 "
         "is a CLAIM.", font(REG, 12), W - 12 - rx - 24)
-    yy = by + 50
+    yy = by + 44
     for ln in dc_lines:
-        d.text((rx + 12, yy), ln, font=font(REG, 12), fill=WHITE)
+        d.text((rx + 12, yy), ln, font=font(REG, 12), fill=BODY)
         yy += 15
     # Legend
-    ly = by + 100
+    ly = by + 90
     d.text((rx, ly), "CERTAINTY",
            font=font(BOLD, 13), fill=AMBER)
     leg = ("REPORTED = confirmed by named outlets · CLAIM = single-source / "
            "unverified attribution · PROPOSAL = announced plan, not yet done")
-    yy = ly + 18
-    for ln in wrap_text(leg, font(REG, 12), W - 12 - rx):
-        d.text((rx, yy), ln, font=font(REG, 12), fill=MUTED)
-        yy += 15
+    yy = ly + 16
+    for ln in wrap_text(leg, font(REG, 11), W - 12 - rx):
+        d.text((rx, yy), ln, font=font(REG, 11), fill=MUTED)
+        yy += 13
     src = ("Sources: Reuters · AP · Yonhap · RAK Police · CoinDesk · WSJ · "
            "Sanofi · BMKG")
-    yy += 2
-    for ln in wrap_text(src, font(REG, 11), W - 12 - rx)[:1]:
-        d.text((rx, yy), ln, font=font(REG, 11), fill=MUTED)
-        yy += 14
+    d.text((rx, 1010), src, font=font(REG, 10), fill=MUTED)
 
     return img
 
